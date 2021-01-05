@@ -2,6 +2,10 @@ from PIL import Image
 import face_recognition
 import time
 import os
+import concurrent.futures
+import math
+import numpy as np
+
 
 start = time.perf_counter()
 
@@ -13,22 +17,6 @@ TOLERANCE = 0.60
 
 known_faces = []
 known_names = []
-
-
-
-
-import concurrent.futures
-import math
-import numpy as np
-
-
-URLS = ['http://www.foxnews.com/',
-        'http://www.cnn.com/',
-        'http://europe.wsj.com/',
-        'http://www.bbc.co.uk/',
-        'http://some-made-up-domain.com/']
-
-
 
 
 
