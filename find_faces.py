@@ -10,11 +10,11 @@ import numpy as np
 start = time.perf_counter()
 DATA_FILE_PATH = r'dataset_faces.dat'
 # KNOWN_FACES_DIR = r'/Volumes/Elements/BrentWood/known_faces'
-KNOWN_FACES_DIR = r'H:\photo\face_finder\pictures\known'
+KNOWN_FACES_DIR = r'H:/photo/face_finder/pictures/known'
 
 # UNKNOWN_FACES_DIR = r'/Volumes/Elements/BrentWood/test_pictures/July 7 - General Coverage Part C/Jennifer Glagola-Poomsae - Round 2'
 # UNKNOWN_FACES_DIR = r'/Volumes/Elements/BrentWood/test_pictures/July 7 - General Coverage Part C'
-UNKNOWN_FACES_DIR = r'H:\photo\face_finder\pictures\unknown'
+UNKNOWN_FACES_DIR = r'H:/photo/face_finder/pictures/unknown'
 
 MODEL = 'hog'  # default: 'hog', other one can be 'cnn' - CUDA accelerated (if available) deep-learning pretrained model
 TOLERANCE = 0.60
@@ -68,14 +68,13 @@ def loadUnknownFace(faceFileName):
     # Now since we know locations, we can pass them to face_encodings as second argument
     # Without that it will search for faces once again slowing down whole process
 
-
-encodings = face_recognition.face_encodings(image, locations)
-processed_faces[faceFileName] = encodings
-print('  - ', len(encodings), ' faces found in', faceFileName)
-for face in encodings:
-    compared_faces = face_recognition.compare_faces(known_faces, face, TOLERANCE)
-    if (True in compared_faces):
-        print(' *** ', known_names[compared_faces.index(True)], ' found in ', f'{faceFileName}')
+    encodings = face_recognition.face_encodings(image, locations)
+    processed_faces[faceFileName] = encodings
+    print('  - ', len(encodings), ' faces found in', faceFileName)
+    for face in encodings:
+        compared_faces = face_recognition.compare_faces(known_faces, face, TOLERANCE)
+        if (True in compared_faces):
+            print(' *** ', known_names[compared_faces.index(True)], ' found in ', f'{faceFileName}')
 
 
 # def findUnknownFaces(directory):
@@ -104,8 +103,7 @@ def processUnknowns( files ):
             #     print('%r page is %d bytes' % (file, len(data)))
 
 
-def checkIfProcessed(files):
-    return
+
 
 
 def findUnknownFaces(directory):
@@ -131,9 +129,30 @@ def findUnknownFaces(directory):
 
 
 def compareEncodings(known):
-    if known in processed_faces.keys():
-        for picture in processed_faces:
-            print(picture)
+    known_encoding = processed_faces[known]
+    unknown_encoding = processed_faces[r'H:/photo/face_finder/pictures/known/Kelly/kelly.jpg']
+    list_of_pictures = list(processed_faces.keys())
+    print(face_recognition.compare_faces(known_encoding, unknown_encoding))
+
+    for picture in list_of_pictures:
+        unknown_encoding = processed_faces[picture]
+        if (unknown_encoding == known_encoding).all():
+            print('Same picture...')
+        else:
+            print(face_recognition.compare_faces(known_encoding, unknown_encoding))
+
+    # if known in processed_faces.keys():
+    #
+    #     known_encoding = processed_faces[known]
+    #     face_encodings = list(processed_faces.values())
+    #     for encoding in face_encodings:
+    #         result = face_recognition.compare_faces(encoding, encoding, TOLERANCE)
+    #
+    #         print(result)
+    #
+    #
+    # else:
+    #     print(f'known image {known} not processed...')
 
 
 def loadPickle(file_name):
@@ -141,7 +160,7 @@ def loadPickle(file_name):
         with open(file_name, 'rb') as f:
             return pickle.load(f)
     else:
-        print("No data stored...")
+        print("   -No data stored...")
         return {}
 
 
@@ -159,7 +178,7 @@ findKnownFaces(KNOWN_FACES_DIR)
 print('Processing unknown faces...')
 findUnknownFaces(UNKNOWN_FACES_DIR)
 
-compareEncodings(r'H:\photo\face_finder\pictures\known\Devin\Devin.jpg')
+compareEncodings(r'H:/photo/face_finder/pictures/known/Devin/Devin.jpg')
 
 dumpPickle(DATA_FILE_PATH)
 
