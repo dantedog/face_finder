@@ -1,22 +1,27 @@
-from PIL import Image
-import face_recognition
-import time
-import os
 import concurrent.futures
 import math
+import os
+import pickle
+import time
+
+import face_recognition
 import numpy as np
 
-
 start = time.perf_counter()
+DATA_FILE_PATH = r'dataset_faces.dat'
+# KNOWN_FACES_DIR = r'/Volumes/Elements/BrentWood/known_faces'
+KNOWN_FACES_DIR = r'H:\photo\face_finder\pictures\known'
 
-KNOWN_FACES_DIR = r'/Volumes/Elements/BrentWood/known_faces'
-#UNKNOWN_FACES_DIR = r'/Volumes/Elements/BrentWood/test_pictures/July 7 - General Coverage Part C/Jennifer Glagola-Poomsae - Round 2'
-UNKNOWN_FACES_DIR = r'/Volumes/Elements/BrentWood/test_pictures/July 7 - General Coverage Part C'
+# UNKNOWN_FACES_DIR = r'/Volumes/Elements/BrentWood/test_pictures/July 7 - General Coverage Part C/Jennifer Glagola-Poomsae - Round 2'
+# UNKNOWN_FACES_DIR = r'/Volumes/Elements/BrentWood/test_pictures/July 7 - General Coverage Part C'
+UNKNOWN_FACES_DIR = r'H:\photo\face_finder\pictures\unknown'
+
 MODEL = 'hog'  # default: 'hog', other one can be 'cnn' - CUDA accelerated (if available) deep-learning pretrained model
 TOLERANCE = 0.60
 
 known_faces = []
 known_names = []
+processed_faces = {}
 
 
 
@@ -26,12 +31,14 @@ def loadKnownFace(faceFileName):
     print('  - Loading ' + faceFileName)
     #
     try:
-        image = face_recognition.load_image_file(f'{faceFileName}')
-        encoding = face_recognition.face_encodings(image)[0]
+        if faceFileName not in processed_faces:
+            image = face_recognition.load_image_file(f'{faceFileName}')
+            encoding = face_recognition.face_encodings(image)[0]
 
-        # Append encodings and name
-        known_faces.append(encoding)
-        known_names.append(faceFileName)
+            # Append encodings and name
+            known_faces.append(encoding)
+            known_names.append(faceFileName)
+            processed_faces[faceFileName] = encoding
     except IndexError:
         print("  ** No face found in ", faceFileName)    
 
@@ -50,8 +57,8 @@ def findKnownFaces(directory):
 
 
 def loadUnknownFace(faceFileName):
-  # Load image
-    print(f'  - Filename: {faceFileName}...',)
+    # Load image
+    print(f'  - Filename: {faceFileName}...', )
 
     image = face_recognition.load_image_file(f'{faceFileName}')
 
@@ -60,12 +67,15 @@ def loadUnknownFace(faceFileName):
 
     # Now since we know locations, we can pass them to face_encodings as second argument
     # Without that it will search for faces once again slowing down whole process
-    encodings = face_recognition.face_encodings(image, locations)
-    print('  - ', len(encodings),' faces found in', faceFileName)
-    for face in encodings:
-        compared_faces = face_recognition.compare_faces(known_faces,face,TOLERANCE)
-        if(True in compared_faces):
-            print(' *** ', known_names[compared_faces.index(True)], ' found in ',f'{faceFileName}' )
+
+
+encodings = face_recognition.face_encodings(image, locations)
+processed_faces[faceFileName] = encodings
+print('  - ', len(encodings), ' faces found in', faceFileName)
+for face in encodings:
+    compared_faces = face_recognition.compare_faces(known_faces, face, TOLERANCE)
+    if (True in compared_faces):
+        print(' *** ', known_names[compared_faces.index(True)], ' found in ', f'{faceFileName}')
 
 
 # def findUnknownFaces(directory):
@@ -94,20 +104,25 @@ def processUnknowns( files ):
             #     print('%r page is %d bytes' % (file, len(data)))
 
 
+def checkIfProcessed(files):
+    return
+
 
 def findUnknownFaces(directory):
-    print(f'Searching directory: {directory}...',)
+    print(f'Searching directory: {directory}...', )
     files = []
     # Each subfolder's name becomes our label (name)
     for name in os.listdir(directory):
         if (os.path.isdir(f'{directory}/{name}')):
             findUnknownFaces(f'{directory}/{name}')
         elif (name.endswith(".png") or name.endswith(".jpg")):
-            files.append(f'{directory}/{name}')
-    
-    num_splits =  math.ceil(len(files)/50)
-    if num_splits > 0 :
-        print('nuber of splits: ', num_splits)
+            # Check if file has already been processed
+            if f'{directory}/{name}' not in processed_faces.keys():
+                files.append(f'{directory}/{name}')
+
+    num_splits = math.ceil(len(files) / 50)
+    if num_splits > 0:
+        print('number of splits: ', num_splits)
         split_array = np.array_split(files, num_splits)
 
         for current_array in split_array:
@@ -115,7 +130,28 @@ def findUnknownFaces(directory):
             processUnknowns(current_array)
 
 
+def compareEncodings(known):
+    if known in processed_faces.keys():
+        for picture in processed_faces:
+            print(picture)
 
+
+def loadPickle(file_name):
+    if (os.path.exists(file_name)):
+        with open(file_name, 'rb') as f:
+            return pickle.load(f)
+    else:
+        print("No data stored...")
+        return {}
+
+
+def dumpPickle(file_name):
+    with open(file_name, 'wb') as f:
+        pickle.dump(processed_faces, f)
+
+
+print('Loading processed faces...')
+processed_faces = loadPickle(DATA_FILE_PATH)
 
 print('Loading known faces...')
 findKnownFaces(KNOWN_FACES_DIR)
@@ -123,9 +159,9 @@ findKnownFaces(KNOWN_FACES_DIR)
 print('Processing unknown faces...')
 findUnknownFaces(UNKNOWN_FACES_DIR)
 
+compareEncodings(r'H:\photo\face_finder\pictures\known\Devin\Devin.jpg')
 
-
-
+dumpPickle(DATA_FILE_PATH)
 
 # image = face_recognition.load_image_file("H:\\photo\\face_finder\\pictures\\unknown\\Devin_reunion.jpg")
 #
